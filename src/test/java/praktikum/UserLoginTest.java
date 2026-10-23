@@ -57,6 +57,6 @@ public class UserLoginTest {
         loginResponse.then()
                 .statusCode(401)
                 .body("success", is(false))
-                .body("message", is("Email or password are incorrect"));
+                .body("message", is("email or password are incorrect"));
     }
 }
