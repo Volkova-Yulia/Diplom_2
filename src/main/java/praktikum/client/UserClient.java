@@ -1,29 +1,21 @@
 package praktikum.client;
 
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import praktikum.config.ApiConfig;
-
-import java.util.HashMap;
-import java.util.Map;
+import praktikum.model.User;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 
 public class UserClient {
 
-    public Response createUser(String email, String password, String name) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("email", email);
-        body.put("password", password);
-        body.put("name", name);
-        return createUser(body);
-    }
-
-    public Response createUser(Map<String, Object> body) {
+    @Step("Создание пользователя: email={user.email}, name={user.name}")
+    public Response createUser(User user) {
         return given()
                 .baseUri(ApiConfig.BASE_URL)
                 .contentType(JSON)
-                .body(body)
+                .body(user)
                 .when()
                 .post(ApiConfig.REGISTER_PATH)
                 .then()
@@ -31,14 +23,12 @@ public class UserClient {
                 .response();
     }
 
-    public Response login(String email, String password) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("email", email);
-        body.put("password", password);
+    @Step("Логин пользователя: email={user.email}")
+    public Response login(User user) {
         return given()
                 .baseUri(ApiConfig.BASE_URL)
                 .contentType(JSON)
-                .body(body)
+                .body(user)
                 .when()
                 .post(ApiConfig.LOGIN_PATH)
                 .then()
@@ -46,6 +36,7 @@ public class UserClient {
                 .response();
     }
 
+    @Step("Удаление пользователя")
     public Response deleteUser(String accessToken) {
         return given()
                 .baseUri(ApiConfig.BASE_URL)

@@ -1,16 +1,18 @@
 package praktikum;
 
+import io.qameta.allure.Description;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import praktikum.client.OrderClient;
 import praktikum.client.UserClient;
+import praktikum.model.Order;
 import praktikum.utils.TestDataGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -42,15 +44,13 @@ public class OrderCreationTest {
     }
 
     public void createUserAndGetToken() {
-        String email = TestDataGenerator.getRandomEmail();
-        String password = TestDataGenerator.getRandomPassword();
-        String name = TestDataGenerator.getRandomName();
-
-        Response registerResponse = userClient.createUser(email, password, name);
+        Response registerResponse = userClient.createUser(TestDataGenerator.getRandomUser());
         accessToken = registerResponse.path("accessToken");
     }
 
     @Test
+    @DisplayName("Создание заказа с авторизацией и ингредиентами")
+    @Description("Авторизованный пользователь создаёт заказ с ингредиентами: код 200, success=true, order.number заполнен")
     public void createOrderWithAuthAndIngredients() {
         createUserAndGetToken();
 
@@ -63,6 +63,8 @@ public class OrderCreationTest {
     }
 
     @Test
+    @DisplayName("Создание заказа без авторизации")
+    @Description("Заказ без токена авторизации: код 401, сообщение You should be authorised")
     public void createOrderWithoutAuthFails() {
         Response response = orderClient.createOrderWithIngredients(ingredientIds, null);
         response.then()
@@ -72,13 +74,12 @@ public class OrderCreationTest {
     }
 
     @Test
+    @DisplayName("Создание заказа без ингредиентов")
+    @Description("Заказ с пустым списком ингредиентов: код 400, сообщение Ingredient ids must be provided")
     public void createOrderWithoutIngredientsFails() {
         createUserAndGetToken();
-        List<String> ingredientsList = new ArrayList<>();
 
-        Map<String, Object> requestBody = Map.of("ingredients", ingredientsList);
-
-        Response response = orderClient.createOrder(requestBody, accessToken);
+        Response response = orderClient.createOrder(new Order(new ArrayList<>()), accessToken);
         response.then()
                 .statusCode(400)
                 .body("success", is(false))
@@ -86,14 +87,15 @@ public class OrderCreationTest {
     }
 
     @Test
+    @DisplayName("Создание заказа с невалидным хешем")
+    @Description("Заказ с несуществующим id ингредиента: код 400, сообщение One or more ids provided are incorrect")
     public void createOrderWithInvalidHashFails() {
         createUserAndGetToken();
 
-        Map<String, Object> requestBody = Map.of("ingredients", List.of("invalid_hash"));
-
-        Response response = orderClient.createOrder(requestBody, accessToken);
+        Response response = orderClient.createOrder(new Order(List.of("invalid_hash")), accessToken);
         response.then()
-                .statusCode(500)
-                .body("message", is("Internal Server Error"));
+                .statusCode(400)
+                .body("success", is(false))
+                .body("message", is("One or more ids provided are incorrect"));
     }
 }

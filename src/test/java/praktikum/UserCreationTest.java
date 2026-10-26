@@ -1,21 +1,18 @@
 package praktikum;
 
+import io.qameta.allure.Description;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import praktikum.client.UserClient;
+import praktikum.model.User;
 import praktikum.utils.TestDataGenerator;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
 
 public class UserCreationTest {
-    private String email;
-    private String password;
-    private String name;
     private String accessToken;
     private UserClient userClient;
 
@@ -33,33 +30,32 @@ public class UserCreationTest {
     }
 
     @Test
+    @DisplayName("Создание уникального пользователя")
+    @Description("Проверка успешного создания пользователя с уникальными данными: код 200, success=true, поля user и accessToken заполнены")
     public void createUniqueUserSuccess() {
-        this.email = TestDataGenerator.getRandomEmail();
-        this.password = TestDataGenerator.getRandomPassword();
-        this.name = TestDataGenerator.getRandomName();
+        User user = TestDataGenerator.getRandomUser();
 
-        Response response = userClient.createUser(email, password, name);
+        Response response = userClient.createUser(user);
         accessToken = response.path("accessToken");
         response.then()
                 .statusCode(200)
                 .body("success", is(true))
-                .body("user.email", equalTo(email))
-                .body("user.name", equalTo(name))
+                .body("user.email", equalTo(user.getEmail()))
+                .body("user.name", equalTo(user.getName()))
                 .body("accessToken", notNullValue());
-
     }
 
     @Test
+    @DisplayName("Создание дубликата пользователя")
+    @Description("Повторная регистрация с теми же данными: код 403, сообщение об ошибке User already exists")
     public void createDuplicateUserFails() {
-        this.email = TestDataGenerator.getRandomEmail();
-        this.password = TestDataGenerator.getRandomPassword();
-        this.name = TestDataGenerator.getRandomName();
+        User user = TestDataGenerator.getRandomUser();
 
-        Response firstResponse = userClient.createUser(email, password, name);
+        Response firstResponse = userClient.createUser(user);
         firstResponse.then().statusCode(200);
         accessToken = firstResponse.path("accessToken");
 
-        Response secondResponse = userClient.createUser(email, password, name);
+        Response secondResponse = userClient.createUser(user);
         secondResponse.then()
                 .statusCode(403)
                 .body("success", is(false))
@@ -67,20 +63,44 @@ public class UserCreationTest {
     }
 
     @Test
-    public void createUserWithoutRequiredFieldFails() {
-        this.email = TestDataGenerator.getRandomEmail();
-        this.password = TestDataGenerator.getRandomPassword();
-        this.name = TestDataGenerator.getRandomName();
+    @DisplayName("Создание пользователя без email")
+    @Description("Регистрация без обязательного поля email: код 403, сообщение Email, password and name are required fields")
+    public void createUserWithoutEmailFails() {
+        User user = TestDataGenerator.getRandomUser();
+        user.setEmail(null);
 
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("email", email);
-        requestBody.put("name", name);
-
-        Response response = userClient.createUser(requestBody);
+        Response response = userClient.createUser(user);
         response.then()
                 .statusCode(403)
                 .body("success", is(false))
                 .body("message", is("Email, password and name are required fields"));
     }
 
+    @Test
+    @DisplayName("Создание пользователя без пароля")
+    @Description("Регистрация без обязательного поля password: код 403, сообщение Email, password and name are required fields")
+    public void createUserWithoutPasswordFails() {
+        User user = TestDataGenerator.getRandomUser();
+        user.setPassword(null);
+
+        Response response = userClient.createUser(user);
+        response.then()
+                .statusCode(403)
+                .body("success", is(false))
+                .body("message", is("Email, password and name are required fields"));
+    }
+
+    @Test
+    @DisplayName("Создание пользователя без имени")
+    @Description("Регистрация без обязательного поля name: код 403, сообщение Email, password and name are required fields")
+    public void createUserWithoutNameFails() {
+        User user = TestDataGenerator.getRandomUser();
+        user.setName(null);
+
+        Response response = userClient.createUser(user);
+        response.then()
+                .statusCode(403)
+                .body("success", is(false))
+                .body("message", is("Email, password and name are required fields"));
+    }
 }

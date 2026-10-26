@@ -43,6 +43,12 @@
             <version>${allure.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- @Step нужен в main (клиенты), поэтому не test scope -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-java-commons</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
